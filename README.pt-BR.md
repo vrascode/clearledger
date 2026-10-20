@@ -108,7 +108,8 @@ ou correção automática. Dados incompletos podem gerar exceções por diferen�
 prazo. Moedas distintas no mesmo repasse nunca são somadas.
 
 Consulte [arquitetura](ARCHITECTURE.pt-BR.md), [segurança](SECURITY.pt-BR.md),
-[entregas](COMMITS.pt-BR.md) e [rascunho de post](POST.pt-BR.md).
+[entregas](COMMITS.pt-BR.md), [checkpoint e retomada](PROGRESS.pt-BR.md)
+e [rascunho de post](POST.pt-BR.md).
 SQLite atende um piloto em host único, com gravações serializadas. Uma chave
 acessa todo o banco; sem isolamento entre organizações. Produção exige TLS,
 política de acesso, rotação de segredos, limites de requisição, criptografia,

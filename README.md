@@ -121,7 +121,8 @@ Multiple currencies on one payout ID are flagged, never netted together.
 ## Architecture and operating limits
 
 See [architecture](ARCHITECTURE.md), [security](SECURITY.md),
-[delivery record](COMMITS.md), and the [unpublished post draft](POST.md).
+[delivery record](COMMITS.md), [checkpoint and resume steps](PROGRESS.md),
+and the [unpublished post draft](POST.md).
 SQLite suits a single-host pilot; write transactions serialize. This is not yet
 a multi-tenant service: one API key grants access to the entire database.
 Production use needs TLS, access policy, secret rotation, rate limits, encrypted
