@@ -1,0 +1,3 @@
+deposit_id,payout_id,currency,amount_minor
+BANK-01,PAY-BRL-01,BRL,24250
+BANK-02,PAY-USD-01,USD,11500

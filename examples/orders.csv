@@ -1,0 +1,6 @@
+order_id,currency,expected_gross_minor,expected_refund_minor
+ORD-1001,BRL,10000,0
+ORD-1002,BRL,20000,5000
+ORD-1003,BRL,7500,0
+ORD-1004,USD,12000,0
+ORD-1005,BRL,4000,0
