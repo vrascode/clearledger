@@ -30,3 +30,8 @@ build/
 .vscode/
 .DS_Store
 Thumbs.db
+node_modules/
+.next/
+*.tsbuildinfo
+playwright-report/
+test-results/

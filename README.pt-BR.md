@@ -2,17 +2,118 @@
 
 [English](README.md)
 
-**Em desenvolvimento.** Serviço funcional de conciliação de três fontes para
+Dashboard em inglês e português do Brasil para conciliação de três fontes em
 operações financeiras: valores esperados dos pedidos, transações de pagamento
 e depósitos bancários. Indica exceções para investigação; não movimenta dinheiro.
 
 Entregue: CSV atômico, idempotência e conflitos, cobranças divididas, reembolsos
 e reversão de taxas, totais por moeda, relatórios SQLite imutáveis, FastAPI
-autenticado, CLI, exportação JSON/CSV e exemplos sintéticos. **64 testes passaram
-localmente em Python 3.12.10 / Windows.**
+autenticado, CLI, exportação JSON/CSV e exemplos sintéticos. A interface Next.js
+inclui visão geral, conciliação, importações CSV, execuções, relatórios e conexão
+local, com temas claro e escuro.
 
-Pendente: teste com servidor real, auditoria de dependências, capturas de execução
-e preparação operacional. Sem implantação em produção ou validação comercial.
+Este continua sendo um protótipo em um único host. Sem implantação em produção
+ou validação comercial. Consulte os [resultados e limites](PROGRESS.pt-BR.md).
+Os demais projetos do portfólio não fazem parte deste repositório.
+
+## Executar o dashboard
+
+Requisitos: Python 3.12+, Node.js 22+ e npm. Instale as dependências Python com
+os comandos da seção de instalação abaixo. Depois, a partir da raiz do projeto:
+
+```powershell
+Set-Location frontend
+npm.cmd ci
+npm.cmd run build
+npm.cmd run start:local
+```
+
+Abra **http://127.0.0.1:3000**. O inicializador executa o FastAPI na porta 8000
+e o Next.js na 3000, gera uma chave compartilhada na memória dos processos e
+mantém o banco em `.runtime/clearledger.sqlite3`. Portas ocupadas são recusadas.
+Ctrl+C encerra os dois serviços. Os logs ficam em `.runtime/`; a chave nunca é
+impressa. Use `npm.cmd run dev:local` durante o desenvolvimento da interface.
+Em Linux/macOS, use `npm` no lugar de `npm.cmd`.
+
+Escolha **Explorar dados de exemplo** para importar os CSVs sintéticos existentes
+pela API real e executar a conciliação. Repetir a ação reutiliza as importações
+e o relatório imutáveis. O aviso **Dados de exemplo** se baseia nos hashes das
+três fontes. Para usar seus arquivos, importe os CSVs e selecione um conjunto de
+cada tipo em **Execuções de conciliação**. Filtros, ordenação, paginação, detalhes
+e exportações usam os relatórios persistidos.
+
+Para executar os serviços separadamente, configure `CLEARLEDGER_API_URL` e
+`CLEARLEDGER_API_KEY` no ambiente do servidor Next.js, conforme o
+[arquivo de exemplo](frontend/.env.example), e use a mesma chave no FastAPI.
+`npm.cmd run dev` ou `npm.cmd run start` executam somente o Next.js.
+A tela Configurações verifica um endereço local e uma chave para uma sessão de
+oito horas. A chave fica na memória do servidor; o navegador recebe um cookie
+HttpOnly opaco. Restaurar a sessão volta à configuração do ambiente, sem excluir
+dados. `CLEARLEDGER_EXAMPLES_DIR` permite indicar a pasta dos CSVs de exemplo.
+Nunca use `NEXT_PUBLIC_` para credenciais.
+
+## Idiomas e apresentação financeira
+
+O seletor com ícone de globo no cabeçalho de todas as páginas alterna
+instantaneamente entre **English (US)** (`en-US`) e **Português (Brasil)**
+(`pt-BR`). Ele funciona pelo teclado e indica o idioma ativo. A preferência é
+salva por um ano no cookie `clearledger-locale`, separado da autenticação.
+Ao reabrir, ela é restaurada. Sem preferência válida, o servidor negocia
+`Accept-Language`, aceitando variantes regionais do inglês e português; idiomas
+não aceitos usam inglês. HTML inicial e cliente recebem o mesmo idioma para
+evitar erros de hidratação. A troca preserva rota, filtros e formulários, sem
+recarregar a página nem buscar os dados financeiros novamente.
+
+Datas, contagens, percentuais e valores seguem o idioma selecionado. Os horários
+usam explicitamente **UTC** nos dois idiomas, mantendo referências de auditoria
+consistentes. BRL 125050 unidades mínimas aparece como `R$1,250.50` em inglês e
+`R$ 1.250,50` em português; JPY não usa casas decimais. A formatação preserva
+todos os centavos com partes BigInt. **Nunca há conversão de moeda.**
+Pagamentos esperados são bruto dos pedidos menos reembolsos esperados; processados
+são cobranças menos reembolsos realizados. A liquidação líquida também desconta
+taxas. O percentual de conciliação conta registros conciliados; verificações
+concluídas não significam divergências resolvidas.
+
+Manutenção das traduções:
+
+- Edite os dicionários [em inglês](frontend/messages/en-US.json) e
+  [em português](frontend/messages/pt-BR.json) com as mesmas chaves, parâmetros
+  e plurais ICU. Não monte frases concatenando fragmentos traduzidos.
+- Use `useI18n()` de `frontend/src/i18n/provider.tsx`. A extensão `AppConfig`
+  do `next-intl` fornece chaves tipadas. Os testes verificam estrutura dos
+  dicionários, parâmetros ICU, todas as mensagens e textos fixos em JSX e rótulos
+  acessíveis.
+- Use os formatadores compartilhados de moeda, data, números e percentuais.
+  Preserve campos da API, cabeçalhos CSV, rotas, IDs, registros e exportações.
+- Para novos diagnósticos da API, adicione o mapeamento em
+  `frontend/src/i18n/errors.ts`. Erros desconhecidos recebem uma explicação
+  traduzida e segura. Validações e notificações guardam descritores para que
+  mensagens já visíveis também acompanhem a troca de idioma.
+
+## Verificação da interface
+
+Execute em `frontend/`:
+
+```powershell
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run format:check
+npm.cmd test
+npm.cmd run build
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Resolve-Path ..) '.cache\ms-playwright'
+npx.cmd playwright install chromium
+npm.cmd run test:e2e
+npm.cmd audit --omit=dev
+```
+
+Os testes de navegador usam o build de produção e um processo Uvicorn real nas
+portas 13000/18000, com chave gerada e banco novo em `.tmp/`. O executor encerra
+os próprios processos e não simula respostas da API. Capturas reais nos dois
+idiomas, em desktop, celular, tablet e tema escuro ficam em
+`.runtime/screenshots/`. As evidências geradas são ignoradas pelo Git.
+Veja os resultados exatos e limites da auditoria em
+[PROGRESS.pt-BR.md](PROGRESS.pt-BR.md). `CLEARLEDGER_PYTHON` permite substituir
+o interpretador do ambiente virtual usado pelos inicializadores e testes.
 
 ## Instalação e execução
 

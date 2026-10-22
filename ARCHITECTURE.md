@@ -4,6 +4,56 @@
 
 Status: working local service; operational hardening remains in progress.
 
+## Dashboard and internationalization — 2026-10-22
+
+The existing reconciliation engine, SQLite schema and FastAPI contracts are
+unchanged. `frontend/` adds Next.js 16.4.2 App Router, React 19.3.1 and strict
+TypeScript. Dependency versions are pinned and `package-lock.json` is committed.
+Tailwind 4 provides design tokens; checked-in shadcn/ui components use Radix
+primitives. Geist is self-hosted. Lucide, Recharts, TanStack Table 8, TanStack
+Query, React Hook Form and Zod cover icons, charts, tables, server state and forms.
+TanStack Table stays on the tested v8 API; v9 has incompatible imports.
+
+```mermaid
+flowchart LR
+    Browser[Browser / EN + PT preferences] --> Next[Next.js pages and same-origin BFF]
+    Next -->|server-only X-API-Key| API[Existing FastAPI]
+    API --> Store[(Existing SQLite snapshots)]
+    Dictionaries[Typed ICU message catalogs] --> Browser
+```
+
+The BFF forwards only the existing supported endpoints to a validated loopback
+HTTP origin, refuses redirects and cross-origin mutations, caps streamed CSV
+bodies at 2 MiB and applies a 30-second upstream timeout. No CORS grant is needed.
+Connection settings hold credentials in bounded server memory, behind opaque
+eight-hour HttpOnly/SameSite cookies; environment configuration is the fallback.
+Demo imports use the actual example bytes and normal API calls. Only reports
+whose three source hashes match those files receive the sample banner.
+
+`next-intl` 4 provides ICU rendering and typed translation keys without localized
+routes or redirect middleware. The server resolves the preference cookie or
+`Accept-Language` once for initial HTML. A client provider updates locale and
+the preference cookie immediately; it does not remount forms or invalidate
+queries. Both small catalogs ship to support switching without a network trip.
+Validation stores message codes, backend diagnostics map to descriptors, and
+toast content consumes the active locale at render time. Unknown errors use a
+localized safe fallback. The two catalogs share a TypeScript shape; tests compare
+keys, ICU parameters and render every message.
+
+Money is formatted from integer minor units using BigInt parts and `Intl`, with
+JPY's zero decimal places. No FX conversion, financial aggregation across
+currencies or modification of stored/exported report values occurs. Dates are
+locale-specific with explicit UTC. Metadata lists are fetched in API pages of
+100; full report filtering/sorting/pagination happens in the browser. Large
+histories and reports need future server-side filtering and capacity work.
+
+Technical references (accessed 2026-10-22):
+[Next.js installation](https://nextjs.org/docs/app/getting-started/installation),
+[shadcn/ui Tailwind 4](https://ui.shadcn.com/docs/tailwind-v4),
+[next-intl configuration](https://next-intl.dev/docs/usage/configuration), and
+[next-intl TypeScript integration](https://next-intl.dev/docs/workflows/typescript).
+The choice of cookie preferences without locale URLs is a local product decision.
+
 ```mermaid
 flowchart LR
     CSV[Normalized CSV] --> Boundary[API key + size limit / local CLI]

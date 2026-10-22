@@ -2,20 +2,117 @@
 
 [Português (Brasil)](README.pt-BR.md)
 
-**Work in progress.** A working three-way settlement reconciliation service for
-finance operations. Compare expected order charges/refunds with payment
+An English / Brazilian Portuguese reconciliation dashboard for finance
+operations, backed by FastAPI and SQLite. Compare expected order charges/refunds with payment
 transactions, then compare each payout's net amount with bank deposits.
 It identifies exceptions for investigation; it does not move funds.
 
 Implemented: atomic CSV imports, idempotency and conflict detection, split
 charges, refunds and fee reversals, separate currency totals, immutable SQLite
 reports, authenticated FastAPI endpoints, CLI, JSON/CSV exports and synthetic
-examples. **64 automated tests passed locally on Python 3.12.10 / Windows.**
+examples. The Next.js dashboard includes overview, reconciliation, CSV imports,
+runs, reporting and local connection settings, with light/dark themes.
 
-Pending: live-server smoke test, dependency vulnerability review, execution
-screenshots and operational hardening. No production deployment or commercial
-validation has occurred. Projects elsewhere in the portfolio are not part of
-this repository.
+This remains a single-host prototype. No production deployment or commercial
+validation is claimed. See [verified results and limitations](PROGRESS.md).
+Projects elsewhere in the portfolio are not part of this repository.
+
+## Run the dashboard
+
+Prerequisites: Python 3.12+, Node.js 22+ and npm. Install the Python dependencies
+using the quick-start commands below, then run from the project root:
+
+```powershell
+Set-Location frontend
+npm.cmd ci
+npm.cmd run build
+npm.cmd run start:local
+```
+
+Open **http://127.0.0.1:3000**. The launcher starts FastAPI on port 8000 and
+Next.js on port 3000, generates a shared API key in process memory, and keeps
+the database in `.runtime/clearledger.sqlite3`. It refuses occupied ports.
+Press Ctrl+C to stop both services. Logs remain in `.runtime/`; the key is
+never printed. Use `npm.cmd run dev:local` for frontend development.
+On Linux/macOS use `npm` instead of `npm.cmd`.
+
+Choose **Explore sample data** to import the existing synthetic CSVs through
+the real API and run reconciliation. Repeating the action reuses the immutable
+imports/report. The **Sample Data** banner is based on the three source content
+hashes. Alternatively, import your CSVs and select one dataset of each kind in
+**Reconciliation runs**. Table filters, sorting, pagination, details and exports
+use actual persisted reports.
+
+For separately managed services, set `CLEARLEDGER_API_URL` and
+`CLEARLEDGER_API_KEY` in the Next.js server environment (see
+[the environment example](frontend/.env.example)); set the same key in FastAPI.
+Run `npm.cmd run dev` or `npm.cmd run start` for Next.js only. The Settings page
+can verify a loopback URL and key for an eight-hour browser session. The key is
+held in server memory and the browser receives an opaque HttpOnly cookie.
+Resetting the session returns to the environment configuration, without deleting
+data. `CLEARLEDGER_EXAMPLES_DIR` optionally sets the example CSV directory.
+Never use `NEXT_PUBLIC_` for credentials.
+
+## Languages and financial presentation
+
+The globe selector in every page header switches instantly between **English
+(US)** (`en-US`) and **Português (Brasil)** (`pt-BR`). It supports keyboard
+navigation and indicates the selected language. The preference is a one-year
+`clearledger-locale` cookie, separate from authentication. Reopening the app
+restores it. Without a valid preference, the server negotiates `Accept-Language`
+(English/Portuguese regional variants supported), falling back to English.
+The initial HTML and client provider use the same locale to avoid hydration
+mismatches. Switching keeps the current route, filters and form state; it does
+not reload the page or refetch financial records.
+
+Dates, counts, percentages and monetary amounts follow the selected locale.
+Timestamps explicitly use **UTC** in both languages for consistent audit
+references. BRL 125050 minor units displays as `R$1,250.50` in English and
+`R$ 1.250,50` in Portuguese; JPY uses zero decimals. Formatting preserves exact
+integer amounts with BigInt parts. **Currency is never converted.** Expected
+payments are order gross minus expected refunds; processed payments are charges
+minus actual refunds. Net settlement additionally subtracts fees. Matching rate
+counts matched records; completed checks do not mean exceptions are resolved.
+
+Translation maintenance:
+
+- Edit both [English messages](frontend/messages/en-US.json) and
+  [Portuguese messages](frontend/messages/pt-BR.json). Use identical keys and ICU
+  placeholders/plurals; do not build sentences by concatenating translated fragments.
+- Use `useI18n()` from `frontend/src/i18n/provider.tsx`. The `next-intl`
+  `AppConfig` augmentation gives typed keys. Catalog shape, ICU arguments and
+  every message are checked automatically. JSX copy and accessible labels have
+  a regression check against hardcoded text.
+- Use the shared money, date, number and percentage formatters. Keep API fields,
+  CSV headers, routes, source IDs, stored records and exported reports unchanged.
+- Add frontend error mappings in `frontend/src/i18n/errors.ts` for any new backend
+  diagnostic. Unknown messages receive a safe localized explanation. Store
+  descriptors for validation/toasts so visible messages also update on switching.
+
+## Frontend verification
+
+From `frontend/`:
+
+```powershell
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run format:check
+npm.cmd test
+npm.cmd run build
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Resolve-Path ..) '.cache\ms-playwright'
+npx.cmd playwright install chromium
+npm.cmd run test:e2e
+npm.cmd audit --omit=dev
+```
+
+The browser runner launches the production Next.js build and a real Uvicorn
+process on ports 13000/18000 with a generated key and a fresh SQLite database in
+`.tmp/`. It shuts down its owned processes, never substitutes API responses,
+and captures genuine English/Portuguese desktop, mobile, tablet and dark-mode
+screenshots in `.runtime/screenshots/`. Generated evidence is intentionally
+ignored by Git. See [PROGRESS.md](PROGRESS.md) for exact results, including
+dependency advisory limitations. `CLEARLEDGER_PYTHON` can override the local
+virtual-environment interpreter for the launchers and contract tests.
 
 ## Quick start
 
@@ -91,7 +188,9 @@ Tests cover failure validation, rollback, immutable storage, replay conflicts,
 concurrent import/run creation, restart durability, currency mismatches,
 refunds, HTTP authentication, streaming body limits and CLI subprocesses.
 The current dependency set emits one Starlette test-client deprecation warning;
-tests pass, and dependency compatibility review remains pending.
+tests pass. It is confined to the in-process test client; real browser tests
+also exercise the API over HTTP. Migration to the new test client is deferred
+to a separate dependency change.
 
 ## CSV contract and limits
 
